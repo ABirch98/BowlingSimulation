@@ -9,6 +9,7 @@ public class Physics : MonoBehaviour
     public GameObject Alley;
     public Camera GameCamera;
     public AudioSource Strike;
+    public AudioSource Roll;
     public bool collidedWithFloor = false;
     private bool collidedWithPins = false;
     public float PinXdistance;
@@ -42,10 +43,16 @@ public class Physics : MonoBehaviour
         if(collidedWithFloor && !collidedWithPins)
         {
             GameCamera.transform.position += Velocity * Time.deltaTime;
+            if(!Roll.isPlaying)
+            {
+              Roll.Play();
+            }
+           
         }
-       
-    
+  
         
+
+
     }
 
     public void checkPositions()
@@ -58,7 +65,7 @@ public class Physics : MonoBehaviour
             print("collidedWithFloor");
         }
         if (Ball.transform.position.x < (Alley.transform.position.x -(Alley.transform.localScale.x/2)))
-        {
+        { 
             collidedWithFloor = false;
         }
 
@@ -69,10 +76,14 @@ public class Physics : MonoBehaviour
             if (PinXdistance <= MaxPinDistance)
             {
                 collidedWithPins = true;
-                Strike.Play();
                // print(Pindistance);
                 print("collidedWithpin");
                 pin.transform.position += new Vector3(20.0f, 0.0f, 0.0f);
+                Roll.Stop();
+                if (!Strike.isPlaying)
+                {
+                   Strike.Play();
+                }
 
             }
 
