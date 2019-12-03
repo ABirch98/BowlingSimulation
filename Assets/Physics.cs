@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//https://www.toptal.com/game/video-game-physics-part-i-an-introduction-to-rigid-body-dynamics
 public class Physics : MonoBehaviour
 {
     public GameObject Ball;
@@ -19,8 +21,16 @@ public class Physics : MonoBehaviour
     public float MaxFloorDistance;
     public float ballRadius;
     public float pinRadius;
-    private Vector3 Gravity = new Vector3(0.0f, -9.81f, 0.0f);
-    private Vector3 Velocity = new Vector3(-10.0f, 0.0f, 0.0f);
+    const float mass = 1;
+    const float FrictionCoefficient = 0.02f;
+    public Vector3 force;
+    public float momentum;
+    public float CentripetalAcceleration;
+    public float KineticFriction;
+    public Vector3 acceleration;
+    private float Gravity = -9.81f;
+    private float Velocity = -10.0f;
+    private Vector3 VectorVelocity;
 
     // Start is called before the first frame update
     void Start()
@@ -37,23 +47,86 @@ public class Physics : MonoBehaviour
         checkPositions();
         if (!collidedWithFloor)
         {
-            Ball.transform.position += Gravity * Time.deltaTime;
+            Ball.transform.position += (new Vector3(0.0f, Gravity, 0.0f) * Time.deltaTime);
         }
-        Ball.transform.position += Velocity * Time.deltaTime;
-        if(collidedWithFloor && !collidedWithPins)
+        Ball.transform.position += (new Vector3(Velocity, 0.0f, 0.0f) * Time.deltaTime);
+        if (collidedWithFloor && !collidedWithPins)
         {
-            GameCamera.transform.position += Velocity * Time.deltaTime;
-            if(!Roll.isPlaying)
+            GameCamera.transform.position += (new Vector3(Velocity, 0.0f, 0.0f) * Time.deltaTime);
+            if (!Roll.isPlaying)
             {
-              Roll.Play();
+                Roll.Play();
             }
-           
+
+        }
+        else
+        {
+            ResolvePhysics();
         }
   
         
 
 
     }
+
+    void calcForce()
+    {
+        force.x = mass * acceleration.x;
+        force.y = mass * acceleration.y;
+    }
+
+    void calcNewAcceleration()
+    {
+        acceleration.x = force.x / mass;
+        acceleration.y = force.y / mass;
+    }
+
+    void calcVelocity()
+    {
+        Velocity = /*DistanceSinceLastTick / */ Time.deltaTime;
+    }
+
+    void calcVelocityChange()
+    {
+        //VelocityChange = (force / mass) * Time.deltaTime;
+    }
+    void calcDistanceSinceLastTick()
+    {
+
+    }
+    
+    void calcFrictionK()
+    {
+        KineticFriction = FrictionCoefficient * force.x;
+    }
+
+    void CalcCentripetalAcceleration()
+    {
+        CentripetalAcceleration = (Mathf.Pow(Velocity, 2) /*/ radiusofpath*/);
+    }
+
+
+    void calcMomentum()
+    {
+        momentum = mass * Velocity;
+    }
+
+    void InitaliseForces()
+    {
+        calcForce();
+        calcDistanceSinceLastTick();
+        calcVelocity();
+        calcMomentum();
+    }
+
+
+    void ResolvePhysics()
+    {
+        //update Position
+    }
+
+
+
 
     public void checkPositions()
     {
