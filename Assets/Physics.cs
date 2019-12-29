@@ -13,132 +13,105 @@ public class Physics : MonoBehaviour
     public AudioSource Strike;
     public AudioSource Roll;
     private GameObject CollidedPin;
-    public bool collidedWithFloor = false;
+    private bool collidedWithFloor = false;
     private bool collidedWithPins = false;
-    public float PinXdistance;
-    public float PinZdistance;
-    public float FloorDistance;
-    public float MaxPinDistance;
-    public float MaxFloorDistance;
-    public float ballRadius;
-    public float PinXPosition;
-    public float pinRadius;
-    public float AngleB;
-    public float AngleC;
+    private float Pindistance;
+    private float FloorDistance;
+    private float MaxPinDistance;
+    private float MaxFloorDistance;
+    private float ballRadius;
+    private float PinXPosition;
+    private float pinRadius;
+    private float AngleB;
+    private float AngleC;
     const float mass = 1;
     const float FrictionCoefficient = 0.02f;
-    public Vector3 force;
-    public float momentum;
-    public float CentripetalAcceleration;
-    public float KineticFriction;
-    public Vector3 acceleration;
+    private Vector3 BallForce;
+    private Vector3 A;
+    private Vector3 B;
+    private float InitialXForce = -2.0f;
+    private float momentum;
+    private float CentripetalAcceleration;
+    private float KineticFriction;
+    private Vector3 Ballacceleration;
     private float Gravity = -9.81f;
-    private float Velocity = -10.0f;
     private Vector3 VectorVelocity;
-    float PinDistance;
-
+    private float PinDistance;
+    private float collisionTime = 0;
+    private float currentTime = 0;
+    private float OldTime = 0;
+    private float dt = 1;
     // Start is called before the first frame update
     void Start()
     {
-        ballRadius = Ball.transform.localScale.x / 2;
-        pinRadius = Pins[0].transform.localScale.x / 2;
-        MaxPinDistance = ((ballRadius) + (pinRadius));
+
+        //initialise some varaiables on startup;
+        MaxPinDistance = 1;
         MaxFloorDistance = (ballRadius + Alley.transform.localScale.y/2);
+        
+
         
     }
 
     // Update is called once per frame
     void Update()
     {
-        
-        checkPositions();
-        if (!collidedWithFloor)
+        if (Time.timeScale == 1)
         {
-            Ball.transform.position += (new Vector3(0.0f, Gravity, 0.0f) * Time.deltaTime);
-        }
-        Ball.transform.position += (new Vector3(Velocity, 0.0f, 0.0f) * Time.deltaTime);
-        if (collidedWithFloor && !collidedWithPins)
-        {
-            
-            GameCamera.transform.position += (new Vector3(Velocity, 0.0f, 0.0f) * Time.deltaTime);
-            
-            if (!Roll.isPlaying)
+            currentTime = Time.realtimeSinceStartup;
+            dt = currentTime - OldTime;
+            OldTime = currentTime;
+            //apply forces
+            //update positions and velocities
+            calcBallInitForce();
+            calcNewAcceleration();
+            calcVelocity();
+            checkPositions(); //check for collisions
+                              //solve constraints 
+                              //update on screen
+            if (!collidedWithFloor)
             {
-                Roll.Play();
+                Ball.transform.position += new Vector3(0.0f, VectorVelocity.y * dt, 0.0f);
+            }
+            Ball.transform.position += new Vector3(VectorVelocity.x * dt, 0.0f, 0.0f);
+            if (collidedWithFloor && !collidedWithPins)
+            {
+                VectorVelocity.y = 0.0f;
+                GameCamera.transform.position += new Vector3(VectorVelocity.x * dt, 0.0f, 0.0f);
+
+                if (!Roll.isPlaying)
+                {
+                    Roll.Play();
+                }
+
+            }
+            if (collidedWithPins)
+            {
+                // CalculateCollisionAngle(PinXdistance);
             }
 
-        }
-        if(collidedWithPins)
-        {
-            Velocity = 0;
-            CalculateCollisionAngle(PinXdistance);
-        }
-        else
-        {
-            ResolvePhysics();
-        }
-  
-        
+            currentTime += dt;
 
-
+        }
     }
 
-    void calcForce()
+  
+    void calcBallInitForce()
     {
-        force.x = mass * acceleration.x;
-        force.y = mass * acceleration.y;
+        BallForce = (new Vector3(InitialXForce, 0, 0));
     }
 
     void calcNewAcceleration()
     {
-        acceleration.x = force.x / mass;
-        acceleration.y = force.y / mass;
+        Ballacceleration = new Vector3(BallForce.x / mass, BallForce.y / mass, BallForce.z / mass);
     }
 
     void calcVelocity()
     {
-        Velocity = /*DistanceSinceLastTick / */ Time.deltaTime;
+        VectorVelocity.x += Ballacceleration.x * dt;
+        VectorVelocity.y += Ballacceleration.y * dt;
+        VectorVelocity.z += Ballacceleration.z * dt;
     }
-
-    void calcVelocityChange()
-    {
-        //VelocityChange = (force / mass) * Time.deltaTime;
-    }
-    void calcDistanceSinceLastTick()
-    {
-
-    }
-    
-    void calcFrictionK()
-    {
-        KineticFriction = FrictionCoefficient * force.x;
-    }
-
-    void CalcCentripetalAcceleration()
-    {
-        CentripetalAcceleration = (Mathf.Pow(Velocity, 2) /*/ radiusofpath*/);
-    }
-
-
-    void calcMomentum()
-    {
-        momentum = mass * Velocity;
-    }
-
-    void InitaliseForces()
-    {
-        calcForce();
-        calcDistanceSinceLastTick();
-        calcVelocity();
-        calcMomentum();
-    }
-
-
-    void ResolvePhysics()
-    {
-        //update Position
-    }
-
 
     void CalculateCollisionAngle(float distanceToPin)
     {
@@ -157,13 +130,11 @@ public class Physics : MonoBehaviour
 
     public void checkPositions()
     {
-        FloorDistance = (Alley.transform.position.y - Ball.transform.position.y);
-        if (Mathf.Pow(FloorDistance,2.0f) < Mathf.Pow(MaxFloorDistance,2.0f))
-        {
+        //FloorDistance = Mathf.Abs(Alley.transform.position.y - Ball.transform.position.y);
             collidedWithFloor = true;
             print(FloorDistance);
             print("collidedWithFloor");
-        }
+
         if (Ball.transform.position.x < (Alley.transform.position.x -(Alley.transform.localScale.x/2)))
         { 
             collidedWithFloor = false;
@@ -171,21 +142,21 @@ public class Physics : MonoBehaviour
 
         foreach (GameObject pin in Pins)
         {
-            PinXdistance = Mathf.Abs(Ball.transform.position.x - pin.transform.position.x);
-            PinZdistance = (pin.transform.position.z - Ball.transform.position.z);
-            if (PinXdistance <= MaxPinDistance)
-            {
-               /* if (PinXdistance!= MaxPinDistance)
-                {
-                   Ball.transform.position += new Vector3(0.00001f, 0, 0);
-                }*/
-                
+            Pindistance = Mathf.Abs(Vector3.Distance(Ball.transform.position, pin.transform.position));
+            if (Pindistance <= MaxPinDistance)
+            { 
+                //fix overlaps
+                float DistanceA = Mathf.Sqrt((Ball.transform.position.x - pin.transform.position.x)*(Ball.transform.position.x - pin.transform.position.x)
+                    + (Ball.transform.position.z - pin.transform.position.z) * (Ball.transform.position.z - pin.transform.position.z));
                 collidedWithPins = true;
+                float DistanceOV = 0.5f * (DistanceA - 1.0f);
+                //tranform by half the overlap in the vector direction of the collision
+                Ball.transform.position -= new Vector3(DistanceOV * (Ball.transform.position.x - pin.transform.position.x) / DistanceA, 0, DistanceOV * (Ball.transform.position.z - pin.transform.position.z) / DistanceA);
+                pin.transform.position += new Vector3(DistanceOV * (Ball.transform.position.x - pin.transform.position.x) / DistanceA, 0, DistanceOV * (Ball.transform.position.z - pin.transform.position.z) / DistanceA);
+                
+                collisionTime = currentTime;
                 CollidedPin = pin;
-                PinXPosition = CollidedPin.transform.position.x;
-                // print(Pindistance);
                 print("collidedWithpin");
-                //pin.transform.position += new Vector3(20.0f, 0.0f, 0.0f);
                 Roll.Stop();
                 if (!Strike.isPlaying)
                 {
