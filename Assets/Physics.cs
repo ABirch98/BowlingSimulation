@@ -97,7 +97,7 @@ public class Physics : MonoBehaviour
 
                 if (!Roll.isPlaying)
                 {
-                    Roll.Play();
+                    //Roll.Play();
                 }
 
             }
@@ -149,35 +149,35 @@ public class Physics : MonoBehaviour
         foreach (GameObject pin in Pins)
         {
             foreach(GameObject Other in Pins)
+        {
+            if (pin.GetComponent<Pin_Properties>().LocalID != Other.GetComponent<Pin_Properties>().LocalID)
             {
-                if (pin.GetComponent<Pin_Properties>().LocalID != Other.GetComponent<Pin_Properties>().LocalID)
+                Pindistance = Mathf.Abs(Vector3.Distance(pin.transform.position, Other.transform.position));
+                if (Pindistance <= MaxPinDistance)
                 {
-                    Pindistance = Mathf.Abs(Vector3.Distance(pin.transform.position, Other.transform.position));
-                    if (Pindistance <= MaxPinDistance)
-                    {
-                        //fix overlaps
+                    //fix overlaps
                         
-                        float DistanceA = Mathf.Sqrt((pin.transform.position.x - Other.transform.position.x) * (pin.transform.position.x - Other.transform.position.x)
-                            + (pin.transform.position.z - Other.transform.position.z) * (pin.transform.position.z - Other.transform.position.z));
-                        CalcDynamic(pin, Other, DistanceA);
-                        collidedWithPins = true;
-                        float DistanceOV = 0.5f * (DistanceA - 1.0f);
-                        //tranform by half the overlap in the vector direction of the collision
-                        pin.transform.position -= new Vector3(DistanceOV * (pin.transform.position.x - Other.transform.position.x) / DistanceA, 0, DistanceOV * (pin.transform.position.z - Other.transform.position.z) / DistanceA);
-                        Other.transform.position += new Vector3(DistanceOV * (pin.transform.position.x - Other.transform.position.x) / DistanceA, 0, DistanceOV * (pin.transform.position.z - Other.transform.position.z) / DistanceA);
-                        CollidedPin = pin;
-                        print("collidedWithpin");
-                        Roll.Stop();
-                        if (!Strike.isPlaying && CollidedPin.GetComponent<Pin_Properties>().LocalID == 10)
-                        {
-                            Strike.Play();
-                        }
+                    float DistanceA = Mathf.Sqrt((pin.transform.position.x - Other.transform.position.x) * (pin.transform.position.x - Other.transform.position.x)
+                        + (pin.transform.position.z - Other.transform.position.z) * (pin.transform.position.z - Other.transform.position.z));
+                    CalcDynamic(pin, Other, DistanceA);
+                    collidedWithPins = true;
+                    float DistanceOV = 0.5f * (DistanceA - 1.0f);
+                    //tranform by half the overlap in the vector direction of the collision
+                    pin.transform.position -= new Vector3(DistanceOV * (pin.transform.position.x - Other.transform.position.x) / DistanceA, 0, DistanceOV * (pin.transform.position.z - Other.transform.position.z) / DistanceA);
+                    Other.transform.position += new Vector3(DistanceOV * (pin.transform.position.x - Other.transform.position.x) / DistanceA, 0, DistanceOV * (pin.transform.position.z - Other.transform.position.z) / DistanceA);
+                    CollidedPin = pin;
+                    print("collidedWithpin");
+                    Roll.Stop();
+                    if (!Strike.isPlaying && CollidedPin.GetComponent<Pin_Properties>().LocalID == 10)
+                    {
+                        Strike.Play();
+                    }
                        
                         
-                    }
+                }
                
 
-                }
+            }
             }
            
 
